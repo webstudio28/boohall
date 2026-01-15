@@ -9,11 +9,12 @@ export async function signInWithGoogle() {
 
     // Get the site URL strictly from environment variables to avoid 'origin' header issues.
     // This is the standard reliable pattern for Vercel + Supabase.
-    let redirectUrl = process.env.NEXT_PUBLIC_SITE_URL ??
-        (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : null) ??
+    // Use || instead of ?? to handle empty strings correctly
+    let redirectUrl = process.env.NEXT_PUBLIC_SITE_URL ||
+        (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : null) ||
         'http://localhost:3000'
 
-    console.log('SignInWithGoogle: Resolved redirectUrl:', redirectUrl)
+    redirectUrl = redirectUrl.startsWith('http') ? redirectUrl : `https://${redirectUrl}`
 
     const { data, error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
