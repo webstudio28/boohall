@@ -13,6 +13,8 @@ export async function signInWithGoogle() {
         (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : null) ??
         'http://localhost:3000'
 
+    console.log('SignInWithGoogle: Resolved redirectUrl:', redirectUrl)
+
     const { data, error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
