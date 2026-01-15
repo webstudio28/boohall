@@ -6,12 +6,17 @@ import { headers } from 'next/headers'
 
 export async function signInWithGoogle() {
     const supabase = await createClient()
-    const origin = (await headers()).get('origin')
+
+    // Get the site URL strictly from environment variables to avoid 'origin' header issues.
+    // This is the standard reliable pattern for Vercel + Supabase.
+    let redirectUrl = process.env.NEXT_PUBLIC_SITE_URL ??
+        (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : null) ??
+        'http://localhost:3000'
 
     const { data, error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
-            redirectTo: `${origin}/auth/callback`,
+            redirectTo: `${redirectUrl}/auth/callback`,
         },
     })
 
