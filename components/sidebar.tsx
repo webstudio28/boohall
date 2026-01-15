@@ -3,20 +3,21 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { LayoutDashboard, FileText, Settings } from 'lucide-react';
-import { cn } from '@/utils/cn'; // Assuming cn utility exists, otherwise I'll use simple string checks
+import { Dictionary } from '@/utils/dictionaries';
 
-// If cn doesn't exist, I'll fallback to simple joining or implement it inline? 
-// I'll check utils first in next step if needed, but clsx/tailwind-merge is standard. 
-// I'll use standard template literal for now to be safe.
+interface SidebarProps {
+    dict: Dictionary;
+}
 
-const navigation = [
-    { name: 'Processes', href: '/dashboard', icon: LayoutDashboard },
-    { name: 'Articles', href: '/articles', icon: FileText },
-    // { name: 'Settings', href: '/settings', icon: Settings },
-];
-
-export function Sidebar() {
+export function Sidebar({ dict }: SidebarProps) {
     const pathname = usePathname();
+
+    const navigation = [
+        { name: dict.sidebar.processes, href: '/dashboard', icon: LayoutDashboard },
+        { name: dict.sidebar.articles, href: '/articles', icon: FileText },
+        { name: dict.sidebar.productDescription, href: '/product-description', icon: FileText },
+        { name: dict.sidebar.serviceDescription, href: '/service-description', icon: FileText },
+    ];
 
     return (
         <div className="flex h-full w-64 flex-col fixed inset-y-0 z-50">
@@ -29,7 +30,7 @@ export function Sidebar() {
                         const isActive = pathname === item.href || (item.href !== '/dashboard' && pathname.startsWith(item.href));
                         return (
                             <Link
-                                key={item.name}
+                                key={item.href}
                                 href={item.href}
                                 className={`
                                     group flex items-center px-2 py-2 text-sm font-medium rounded-md transition-colors

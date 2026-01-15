@@ -18,50 +18,11 @@ export default async function LoginPage({
                     </p>
                 </div>
 
-                <form className="mt-8 space-y-6">
-                    <div className="space-y-4">
-                        <div>
-                            <label htmlFor="email" className="block text-sm font-medium text-zinc-700">
-                                Email address
-                            </label>
-                            <div className="mt-1">
-                                <input
-                                    id="email"
-                                    name="email"
-                                    type="email"
-                                    autoComplete="email"
-                                    required
-                                    className="block w-full rounded-md border border-zinc-300 px-3 py-2 text-zinc-900 placeholder-zinc-400 focus:border-black focus:outline-none focus:ring-1 focus:ring-black sm:text-sm"
-                                />
-                            </div>
-                        </div>
-
-                        <div>
-                            <label htmlFor="password" className="block text-sm font-medium text-zinc-700">
-                                Password
-                            </label>
-                            <div className="mt-1">
-                                <input
-                                    id="password"
-                                    name="password"
-                                    type="password"
-                                    autoComplete="current-password"
-                                    required
-                                    className="block w-full rounded-md border border-zinc-300 px-3 py-2 text-zinc-900 placeholder-zinc-400 focus:border-black focus:outline-none focus:ring-1 focus:ring-black sm:text-sm"
-                                />
-                            </div>
-                        </div>
-                    </div>
-
-                    {(error || message) && (
-                        <div className="text-sm text-red-500 text-center bg-red-50 p-2 rounded">
-                            {error || message}
-                        </div>
-                    )}
-
-                    <div className="flex flex-col gap-3">
+                <div className="mt-8 space-y-6">
+                    {/* Google Login Form */}
+                    <form action={signInWithGoogle}>
                         <button
-                            formAction={signInWithGoogle}
+                            type="submit"
                             className="flex w-full items-center justify-center gap-2 rounded-md border border-zinc-300 bg-white px-4 py-2 text-sm font-medium text-zinc-700 shadow-sm hover:bg-zinc-50 focus:outline-none focus:ring-2 focus:ring-black focus:ring-offset-2"
                         >
                             <svg className="h-4 w-4" viewBox="0 0 24 24">
@@ -84,30 +45,76 @@ export default async function LoginPage({
                             </svg>
                             Sign in with Google
                         </button>
+                    </form>
 
-                        <div className="relative">
-                            <div className="absolute inset-0 flex items-center">
-                                <span className="w-full border-t border-zinc-300" />
+                    <div className="relative">
+                        <div className="absolute inset-0 flex items-center">
+                            <span className="w-full border-t border-zinc-300" />
+                        </div>
+                        <div className="relative flex justify-center text-xs uppercase">
+                            <span className="bg-white px-2 text-zinc-500">Or continue with</span>
+                        </div>
+                    </div>
+
+                    {/* Email Login Form */}
+                    <form className="space-y-6">
+                        <div className="space-y-4">
+                            <div>
+                                <label htmlFor="email" className="block text-sm font-medium text-zinc-700">
+                                    Email address
+                                </label>
+                                <div className="mt-1">
+                                    <input
+                                        id="email"
+                                        name="email"
+                                        type="email"
+                                        autoComplete="email"
+                                        required
+                                        className="block w-full rounded-md border border-zinc-300 px-3 py-2 text-zinc-900 placeholder-zinc-400 focus:border-black focus:outline-none focus:ring-1 focus:ring-black sm:text-sm"
+                                    />
+                                </div>
                             </div>
-                            <div className="relative flex justify-center text-xs uppercase">
-                                <span className="bg-white px-2 text-zinc-500">Or continue with</span>
+
+                            <div>
+                                <label htmlFor="password" className="block text-sm font-medium text-zinc-700">
+                                    Password
+                                </label>
+                                <div className="mt-1">
+                                    <input
+                                        id="password"
+                                        name="password"
+                                        type="password"
+                                        autoComplete="current-password"
+                                        required
+                                        className="block w-full rounded-md border border-zinc-300 px-3 py-2 text-zinc-900 placeholder-zinc-400 focus:border-black focus:outline-none focus:ring-1 focus:ring-black sm:text-sm"
+                                    />
+                                </div>
                             </div>
                         </div>
 
-                        <button
-                            formAction={login}
-                            className="flex w-full justify-center rounded-md bg-black px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-zinc-800 focus:outline-none focus:ring-2 focus:ring-black focus:ring-offset-2"
-                        >
-                            Sign in with Email
-                        </button>
-                        <button
-                            formAction={signup}
-                            className="flex w-full justify-center rounded-md border border-transparent bg-transparent px-4 py-2 text-sm font-medium text-zinc-600 hover:text-black focus:outline-none"
-                        >
-                            Don't have an account? Sign up
-                        </button>
-                    </div>
-                </form>
+                        {(error || message) && (
+                            <div className="text-sm text-red-500 text-center bg-red-50 p-2 rounded">
+                                {error || message}
+                            </div>
+                        )}
+
+                        <div className="flex flex-col gap-3">
+                            <button
+                                formAction={login}
+                                className="flex w-full justify-center rounded-md bg-black px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-zinc-800 focus:outline-none focus:ring-2 focus:ring-black focus:ring-offset-2"
+                            >
+                                Sign in with Email
+                            </button>
+                            <button
+                                formAction={signup}
+                                formNoValidate
+                                className="flex w-full justify-center rounded-md border border-transparent bg-transparent px-4 py-2 text-sm font-medium text-zinc-600 hover:text-black focus:outline-none"
+                            >
+                                Don't have an account? Sign up
+                            </button>
+                        </div>
+                    </form>
+                </div>
             </div>
         </div>
     )

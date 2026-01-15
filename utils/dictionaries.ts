@@ -62,6 +62,61 @@ export const dictionaries = {
             generating: "AI анализира SERP и пише...",
             placeholder: "Започнете да пишете..."
         },
+        // NEW SECTIONS
+        sidebar: {
+            processes: "Процеси",
+            articles: "Статии",
+            productDescription: "Описание на Продукт",
+            serviceDescription: "Описание на Услуга",
+            settings: "Настройки"
+        },
+        product: {
+            title: "Описания на Продукти",
+            addTitle: "Добави Нов Продукт",
+            contextLabel: "Контекст за Продукта",
+            contextPlaceholder: "напр. Ръчно изработен кожен портфейл, минималистичен дизайн, кафяв цвят...",
+            imageLabel: "Снимка на Продукта",
+            uploadText: "Кликнете за качване на снимка",
+            compressingNote: "Снимката ще бъде компресирана преди обработка.",
+            analyzeBtn: "Анализирай Продукта",
+            analyzingBtn: "Анализиране...",
+            nextBtn: "Напред: Избери Ключови Думи",
+            backBtn: "Обратно към детайли",
+            step2Title: "Стъпка 2: Започнете с ключови фрази",
+            keywordsFound: "намерени ключови думи",
+            yourProducts: "Вашите Продукти",
+            noProducts: "Все още няма добавени продукти. Използвайте формата, за да добавите първия си продукт.",
+            success: "Продуктът е създаден успешно!",
+            error: "Нещо се обърка. Моля, опитайте отново.",
+            noImage: "Няма Снимка"
+        },
+        service: {
+            title: "Описания на Услуги",
+            addTitle: "Добави Нова Услуга",
+            descriptionLabel: "Описание на Услугата",
+            descriptionPlaceholder: "напр. Професионално счетоводство за малък бизнес, данъчни консултации...",
+            analyzeBtn: "Анализирай Услугата",
+            analyzingBtn: "Анализиране...",
+            nextBtn: "Напред: Избери Ключови Думи",
+            backBtn: "Обратно към детайли",
+            step2Title: "Стъпка 2: Започнете с ключови фрази",
+            keywordsFound: "намерени ключови думи",
+            yourServices: "Вашите Услуги",
+            noServices: "Все още няма добавени услуги.",
+            success: "Услугата е създадена успешно!",
+            error: "Нещо се обърка. Моля, опитайте отново.",
+            detailsTitle: "Детайли за Услугата",
+            generatedTitle: "Генерирано Описание",
+            keywordsTitle: "Целеви Ключови Думи"
+        },
+        keywords: {
+            title: "Избери Ключови Думи",
+            subtitle: "Изберете до {max} ключови думи, върху които да се фокусира описанието.",
+            vol: "Обем",
+            diff: "Трудност",
+            continueBtn: "Продължи с {count} Ключови Думи",
+            generatingBtn: "Генериране на Описание..."
+        },
         common: {
             bg: "Български",
             en: "Английски"
@@ -129,6 +184,61 @@ export const dictionaries = {
             export: "Export .md",
             generating: "Analysing SERPs & Writing...",
             placeholder: "Start writing..."
+        },
+        // NEW SECTIONS
+        sidebar: {
+            processes: "Processes",
+            articles: "Articles",
+            productDescription: "Product Description",
+            serviceDescription: "Service Description",
+            settings: "Settings"
+        },
+        product: {
+            title: "Product Descriptions",
+            addTitle: "Add New Product",
+            contextLabel: "Product Context",
+            contextPlaceholder: "e.g. Handmade leather wallet, minimalist design, brown color...",
+            imageLabel: "Product Image",
+            uploadText: "Click to upload image",
+            compressingNote: "Image will be compressed before processing.",
+            analyzeBtn: "Analyze Product",
+            analyzingBtn: "Analyzing...",
+            nextBtn: "Next: Select Keywords",
+            backBtn: "Back to details",
+            step2Title: "Step 2: Start with key phrases",
+            keywordsFound: "keywords found",
+            yourProducts: "Your Products",
+            noProducts: "No products added yet. Use the form to add your first product.",
+            success: "Product created successfully!",
+            error: "Something went wrong. Please try again.",
+            noImage: "No Image"
+        },
+        service: {
+            title: "Service Descriptions",
+            addTitle: "Add New Service",
+            descriptionLabel: "Service Description",
+            descriptionPlaceholder: "e.g. Professional accounting for small businesses, tax preparation...",
+            analyzeBtn: "Analyze Service",
+            analyzingBtn: "Analyzing...",
+            nextBtn: "Next: Select Keywords",
+            backBtn: "Back to details",
+            step2Title: "Step 2: Start with key phrases",
+            keywordsFound: "keywords found",
+            yourServices: "Your Services",
+            noServices: "No services added yet.",
+            success: "Service created successfully!",
+            error: "Something went wrong. Please try again.",
+            detailsTitle: "Service Details",
+            generatedTitle: "Generated Description",
+            keywordsTitle: "Targeted Keywords"
+        },
+        keywords: {
+            title: "Select Keywords",
+            subtitle: "Choose up to {max} keywords to focus your description on.",
+            vol: "Vol",
+            diff: "Diff",
+            continueBtn: "Continue with {count} Keywords",
+            generatingBtn: "Generating Description..."
         },
         common: {
             bg: "Bulgarian",
