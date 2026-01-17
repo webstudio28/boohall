@@ -183,7 +183,21 @@ export default async function DashboardPage() {
                             <tbody className="bg-white divide-y divide-zinc-200">
                                 {keywords.map((kw) => (
                                     <tr key={kw.id} className="hover:bg-zinc-50">
-                                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-zinc-900">{kw.keyword}</td>
+                                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-zinc-900">
+                                            <div className="flex items-center gap-2">
+                                                {kw.keyword}
+                                                {kw.source === 'dataforseo' && (
+                                                    <span className="inline-flex items-center rounded-md bg-blue-50 px-2 py-1 text-xs font-medium text-blue-700 ring-1 ring-inset ring-blue-700/10">
+                                                        DataForSEO
+                                                    </span>
+                                                )}
+                                                {kw.source === 'ai' && (
+                                                    <span className="inline-flex items-center rounded-md bg-purple-50 px-2 py-1 text-xs font-medium text-purple-700 ring-1 ring-inset ring-purple-700/10">
+                                                        AI
+                                                    </span>
+                                                )}
+                                            </div>
+                                        </td>
                                         <td className="px-6 py-4 whitespace-nowrap text-sm text-zinc-500">{kw.volume}</td>
                                         <td className="px-6 py-4 whitespace-nowrap text-sm">
                                             <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full 

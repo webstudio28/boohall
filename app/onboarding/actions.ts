@@ -14,7 +14,13 @@ export async function saveBusinessContext(formData: FormData) {
     }
 
     const businessType = formData.get('businessType') as string
-    const websiteUrl = formData.get('websiteUrl') as string
+    let websiteUrl = formData.get('websiteUrl') as string
+
+    // Auto-prepend https:// if missing
+    if (websiteUrl && !websiteUrl.startsWith('http')) {
+        websiteUrl = `https://${websiteUrl}`
+    }
+
     const targetCountry = formData.get('targetCountry') as string
     const language = formData.get('language') as 'bg' | 'en'
     const productDescription = formData.get('productDescription') as string

@@ -20,49 +20,58 @@ function useDebounce(value: string, delay: number) {
 export default function EditorInterface({ initialArticle }: { initialArticle: any }) {
     const [content, setContent] = useState(initialArticle.content || '')
     const [title, setTitle] = useState(initialArticle.title || '')
-    // Infer status from content existence if not explicitly generating
-    const [status, setStatus] = useState(initialArticle.content ? 'completed' : 'generating')
+    // Infer status from initialArticle.status or content existence
+    const [status, setStatus] = useState(initialArticle.status || (initialArticle.content ? 'completed' : 'generating'))
     const [isSaving, setIsSaving] = useState(false)
+    const [hasChanges, setHasChanges] = useState(false)
     const router = useRouter()
     const supabase = createClient()
-
-    const debouncedContent = useDebounce(content, 1000)
-    const debouncedTitle = useDebounce(title, 1000)
 
     // Polling for generation completion
     useEffect(() => {
         if (status === 'generating') {
             const interval = setInterval(async () => {
-                // Poll for content existence
-                const { data } = await supabase.from('articles').select('content, title').eq('id', initialArticle.id).single()
-                if (data && data.content) {
+                // Poll for status or content
+                const { data } = await supabase.from('articles').select('status, content, title').eq('id', initialArticle.id).single()
+
+                if (data && (data.status === 'completed' || data.content)) {
                     setStatus('completed')
                     setContent(data.content || '')
                     setTitle(data.title || '')
+                    setHasChanges(false) // Reset changes as we just loaded fresh data
                     clearInterval(interval)
                     router.refresh()
+                } else if (data && data.status === 'failed') {
+                    setStatus('failed')
+                    clearInterval(interval)
                 }
             }, 3000)
             return () => clearInterval(interval)
         }
     }, [status, initialArticle.id, supabase, router])
 
-    // Auto-save effect
+    // Track changes
     useEffect(() => {
-        if (status === 'generating') return // Don't save while generating
-
-        // Only save if content changed from initial or last save
-        const save = async () => {
-            setIsSaving(true)
-            await updateArticle(initialArticle.id, debouncedContent, debouncedTitle)
-            setIsSaving(false)
+        // Simple check: if current content/title differs from initial AND we are not generating
+        // But initialArticle is static. We need to compare against "last saved state".
+        // For simplicity, let's just say if we type anything, it becomes dirty.
+        // Or we can compare with initial.
+        if (content !== initialArticle.content || title !== initialArticle.title) {
+            setHasChanges(true)
         }
+    }, [content, title, initialArticle.content, initialArticle.title])
 
-        // Trigger save on debounce change
-        if (debouncedContent !== initialArticle.content || debouncedTitle !== initialArticle.title) {
-            save()
-        }
-    }, [debouncedContent, debouncedTitle, initialArticle.id, status, initialArticle.content, initialArticle.title])
+    const handleSave = async () => {
+        if (!hasChanges || isSaving) return;
+
+        setIsSaving(true)
+        await updateArticle(initialArticle.id, content, title)
+        setIsSaving(false)
+        setHasChanges(false)
+        router.refresh() // Refresh server data so initialArticle updates on next load (if we were to reload)
+        // Ideally we should update the "initial" reference here to avoid dirty flag resetting immediately if we matched against it,
+        // but since we navigate or stay, visual feedback is enough.
+    }
 
 
     const handleDownload = (format: 'md' | 'txt') => {
@@ -80,13 +89,30 @@ export default function EditorInterface({ initialArticle }: { initialArticle: an
             <div className="w-1/2 flex flex-col border-r border-zinc-200">
                 <div className="p-4 border-b border-zinc-100 bg-zinc-50 flex justify-between items-center">
                     <span className="text-xs font-semibold text-zinc-500 uppercase">Markdown Input</span>
-                    {isSaving && <span className="text-xs text-zinc-400 animate-pulse">Saving...</span>}
+                    <div className="flex items-center gap-2">
+                        {status === 'failed' && <span className="text-xs text-red-500 font-medium">Generation Failed</span>}
+
+                        <button
+                            onClick={handleSave}
+                            disabled={!hasChanges || isSaving || status === 'generating'}
+                            className={`px-3 py-1.5 rounded-md text-xs font-medium transition-colors border
+                                ${hasChanges && !isSaving
+                                    ? 'bg-black text-white border-black hover:bg-zinc-800 cursor-pointer shadow-sm'
+                                    : 'bg-zinc-100 text-zinc-400 border-zinc-200 cursor-not-allowed'}
+                            `}
+                        >
+                            {isSaving ? 'Saving...' : 'Save Changes'}
+                        </button>
+                    </div>
                 </div>
                 <textarea
                     className="flex-1 w-full p-6 resize-none focus:outline-none font-mono text-sm leading-relaxed"
                     placeholder={status === 'generating' ? 'AI is writing your article...' : 'Start writing...'}
                     value={content}
-                    onChange={(e) => setContent(e.target.value)}
+                    onChange={(e) => {
+                        setContent(e.target.value)
+                        setHasChanges(true)
+                    }}
                     disabled={status === 'generating'}
                 />
             </div>

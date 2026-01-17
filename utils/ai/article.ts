@@ -1,13 +1,18 @@
 import { openai } from './client';
-import { createClient } from '@/utils/supabase/server';
+import { createAdminClient } from '@/utils/supabase/admin';
 
 export async function generateArticleContent(articleId: string) {
-    const supabase = await createClient();
+    console.log(`[AI-Job] Starting generation for article: ${articleId}`);
 
-    // 1. Fetch Context - Adjust query to match actual schema relations
-    // Using `keyword_id` relation if setup, otherwise we might need manual fetch
-    // Assuming Supabase infers `keywords` relation from `keyword_id` FK.
-    const { data: article } = await supabase
+    // Use Admin Client for background jobs to avoid cookie/session expiry
+    if (!process.env.SUPABASE_SERVICE_ROLE_KEY) {
+        console.error('[AI-Job] SUPABASE_SERVICE_ROLE_KEY is missing!');
+        return;
+    }
+    const supabase = createAdminClient();
+
+    // 1. Fetch Context
+    const { data: article, error: fetchError } = await supabase
         .from('articles')
         .select(`
             *,
@@ -17,18 +22,24 @@ export async function generateArticleContent(articleId: string) {
         .eq('id', articleId)
         .single();
 
-    if (!article) return;
+    if (fetchError || !article) {
+        console.error('[AI-Job] Failed to fetch article context:', fetchError);
+        // Try to set status to failed if possible (requires simple client or raw query if we have id)
+        await supabase.from('articles').update({ status: 'failed' }).eq('id', articleId);
+        return;
+    }
 
     // @ts-ignore 
     const keyword = article.keyword?.keyword;
     // @ts-ignore
     const business = article.business;
 
-    // Remove status update since column doesn't exist in new schema
-    // await supabase.from('articles').update({ status: 'generating' }).eq('id', articleId);
+    console.log(`[AI-Job] Context loaded. Keyword: ${keyword}`);
 
     try {
-        // 2. Research & Outline (Combined for speed)
+        await supabase.from('articles').update({ status: 'generating' }).eq('id', articleId);
+
+        // 2. Research & Outline
         const prompt = `
       You are an expert SEO Writer.
       Write a comprehensive SEO article for:
@@ -53,23 +64,31 @@ export async function generateArticleContent(articleId: string) {
       }
     `;
 
+        console.log('[AI-Job] Sending prompt to OpenAI...');
         const completion = await openai.chat.completions.create({
             messages: [{ role: "system", content: "You are a professional Content Writer." }, { role: "user", content: prompt }],
-            model: "gpt-5.2", // Use GPT-5.2 for best quality
+            model: "gpt-5.2",
             response_format: { type: "json_object" },
         });
 
         const result = JSON.parse(completion.choices[0].message.content || '{}');
+        console.log('[AI-Job] OpenAI response received. Saving to DB...');
 
         // 3. Save
-        await supabase.from('articles').update({
+        const { error: updateError } = await supabase.from('articles').update({
             title: result.title || 'Untitled Article',
-            content: result.content || result.content_md || '', // adaptation
-            // status: 'completed', // Not in schema
+            content: result.content || result.content_md || '',
+            status: 'completed'
         }).eq('id', articleId);
 
+        if (updateError) {
+            console.error('[AI-Job] DB Update Failed:', updateError);
+        } else {
+            console.log('[AI-Job] Article saved successfully.');
+        }
+
     } catch (error) {
-        console.error('Article generation failed:', error);
-        // await supabase.from('articles').update({ status: 'draft' }).eq('id', articleId);
+        console.error('[AI-Job] Article generation failed:', error);
+        await supabase.from('articles').update({ status: 'failed' }).eq('id', articleId);
     }
 }

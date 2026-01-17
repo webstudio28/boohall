@@ -20,11 +20,10 @@ export const dictionaries = {
                 submit: "Започни Първоначално Проучване"
             },
             options: {
-                saas: "SaaS",
-                ecommerce: "Електронна търговия",
-                agency: "Агенция",
+                ecommerce: "Онлайн магазин",
+                company: "Фирмен сайт",
+                service: "Сайт за услуги",
                 blog: "Блог",
-                other: "Друго"
             }
         },
         dashboard: {
@@ -65,6 +64,7 @@ export const dictionaries = {
         // NEW SECTIONS
         sidebar: {
             processes: "Процеси",
+            competitors: "Конкуренти",
             articles: "Статии",
             productDescription: "Описание на Продукт",
             serviceDescription: "Описание на Услуга",
@@ -143,11 +143,10 @@ export const dictionaries = {
                 submit: "Start Initial Research"
             },
             options: {
-                saas: "SaaS",
                 ecommerce: "Ecommerce",
-                agency: "Agency",
+                company: "Company Website",
+                service: "Service Website",
                 blog: "Blog",
-                other: "Other"
             }
         },
         dashboard: {
@@ -188,6 +187,7 @@ export const dictionaries = {
         // NEW SECTIONS
         sidebar: {
             processes: "Processes",
+            competitors: "Competitors",
             articles: "Articles",
             productDescription: "Product Description",
             serviceDescription: "Service Description",

@@ -50,21 +50,20 @@ export default async function OnboardingPage() {
                                 id="businessType"
                                 className="mt-1 block w-full rounded-md border border-zinc-300 px-3 py-2 text-zinc-900 focus:border-black focus:ring-black sm:text-sm"
                             >
-                                <option value="SaaS">{dict.onboarding.options.saas}</option>
                                 <option value="Ecommerce">{dict.onboarding.options.ecommerce}</option>
-                                <option value="Agency">{dict.onboarding.options.agency}</option>
+                                <option value="Company">{dict.onboarding.options.company}</option>
+                                <option value="Service">{dict.onboarding.options.service}</option>
                                 <option value="Blog">{dict.onboarding.options.blog}</option>
-                                <option value="Other">{dict.onboarding.options.other}</option>
                             </select>
                         </div>
 
                         <div>
                             <label htmlFor="websiteUrl" className="block text-sm font-medium text-zinc-700">{dict.onboarding.fields.websiteUrl}</label>
                             <input
-                                type="url"
+                                type="text"
                                 name="websiteUrl"
                                 id="websiteUrl"
-                                placeholder="https://example.com"
+                                placeholder="example.com"
                                 required
                                 className="mt-1 block w-full rounded-md border border-zinc-300 px-3 py-2 text-zinc-900 focus:border-black focus:ring-black sm:text-sm"
                             />

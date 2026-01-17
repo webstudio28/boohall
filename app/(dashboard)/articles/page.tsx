@@ -3,6 +3,9 @@ import { redirect } from 'next/navigation'
 import Link from 'next/link'
 import { ArticlesGrid } from './articles-grid'
 
+export const dynamic = 'force-dynamic'
+export const revalidate = 0
+
 export default async function ArticlesPage() {
     const supabase = await createClient()
 

@@ -14,6 +14,7 @@ export function Sidebar({ dict }: SidebarProps) {
 
     const navigation = [
         { name: dict.sidebar.processes, href: '/dashboard', icon: LayoutDashboard },
+        { name: dict.sidebar.competitors, href: '/competitors', icon: LayoutDashboard }, // using LayoutDashboard for now or another icon
         { name: dict.sidebar.articles, href: '/articles', icon: FileText },
         { name: dict.sidebar.productDescription, href: '/product-description', icon: FileText },
         { name: dict.sidebar.serviceDescription, href: '/service-description', icon: FileText },

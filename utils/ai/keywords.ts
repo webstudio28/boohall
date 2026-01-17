@@ -116,23 +116,29 @@ export async function generateKeywords(businessId: string) {
                     keyword: item.keyword, // Exact keyword from API
                     volume: item.volume || 0,
                     difficulty: item.difficulty || 'Medium',
-                    intent: 'Mixed'
-                };
+                    intent: 'Mixed',
+                    isValid: true // Verified by DataForSEO
+                } as KeywordData & { isValid: boolean };
             } else {
-                // Return placeholder with 0 volume, will be filtered out
+                // Return placeholder with 0 volume
                 return {
                     keyword: seedKeyword,
                     volume: 0,
                     difficulty: 'Medium',
-                    intent: 'Mixed'
-                };
+                    intent: 'Mixed',
+                    isValid: false
+                } as KeywordData & { isValid: boolean };
             }
         });
 
-        // Filter out zero volume keywords as requested
+        // Filter: Keep verified keywords (even if volume is 0) 
+        // OR keep high volume keywords if verification failed coverage
         const beforeFilter = keywordData.length;
-        keywordData = keywordData.filter(k => k.volume > 0);
-        console.log(`Keywords Filtered: ${beforeFilter} -> ${keywordData.length}. removed ${beforeFilter - keywordData.length} zero-volume keywords.`);
+
+        // Relaxed Filter: Keep if valid from API, OR if volume > 0 (just in case)
+        keywordData = keywordData.filter((k: any) => k.isValid || k.volume > 0);
+
+        console.log(`Keywords Filtered: ${beforeFilter} -> ${keywordData.length}. removed ${beforeFilter - keywordData.length} invalid/zero-volume keywords.`);
 
     } catch (error) {
         console.error('DataForSEO failed, falling back to AI.', error);
@@ -175,13 +181,14 @@ export async function generateKeywords(businessId: string) {
     if (keywordData.length > 0) {
         // existing insert logic
         await supabase.from('keywords').insert(
-            keywordData.map(k => ({
+            keywordData.map((k: any) => ({
                 business_id: businessId,
                 keyword: k.keyword,
                 volume: k.volume,
                 difficulty: k.difficulty,
                 intent: k.intent,
-                is_selected: false
+                is_selected: false,
+                source: k.isValid ? 'dataforseo' : 'ai'
             }))
         );
     }

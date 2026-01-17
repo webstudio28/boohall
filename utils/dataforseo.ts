@@ -20,6 +20,9 @@ export const getKeywordsData = async (keywords: string[], countryCode: string, l
     // Helper to make requests
     const makeRequest = async (endpoint: string, postData: any[]) => {
         try {
+            console.log(`[DataForSEO] Requesting endpoint: ${endpoint}`);
+            console.log(`[DataForSEO] Payload preview:`, JSON.stringify(postData[0]).substring(0, 200));
+
             const response = await fetch(`https://api.dataforseo.com/v3/${endpoint}`, {
                 method: 'POST',
                 headers: {
@@ -31,19 +34,30 @@ export const getKeywordsData = async (keywords: string[], countryCode: string, l
 
             if (!response.ok) {
                 const errorText = await response.text();
-                console.error(`DataForSEO API error [${endpoint}]:`, response.status, errorText);
+                console.error(`[DataForSEO] API ERROR [${endpoint}]: Status ${response.status}`, errorText);
                 return null;
             }
 
             const data = await response.json();
 
+            // Log task status if available
+            if (data.tasks && data.tasks[0]) {
+                console.log(`[DataForSEO] Task Status: ${data.tasks[0].status_message} (Code: ${data.tasks[0].status_code})`);
+                if (data.tasks[0].status_code >= 40000) {
+                    console.error(`[DataForSEO] Task Error:`, data.tasks[0].status_message);
+                }
+            }
+
             // Labs API tasks[0].result[0].items
             if (data.tasks && data.tasks[0] && data.tasks[0].result && data.tasks[0].result[0] && data.tasks[0].result[0].items) {
+                console.log(`[DataForSEO] Success. Items found: ${data.tasks[0].result[0].items.length}`);
                 return data.tasks[0].result[0].items;
+            } else {
+                console.warn(`[DataForSEO] Response structure unexpected or empty results.`, JSON.stringify(data).substring(0, 200));
             }
             return [];
         } catch (error) {
-            console.error(`DataForSEO request failed [${endpoint}]:`, error);
+            console.error(`[DataForSEO] Request FAILED [${endpoint}]:`, error);
             return [];
         }
     };
