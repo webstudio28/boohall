@@ -2,6 +2,7 @@ import { createClient } from '@/utils/supabase/server';
 import { ArrowLeft } from 'lucide-react';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
+import { SeoChecklistPanel } from '@/components/seo-checklist/seo-checklist-panel';
 
 interface PageProps {
     params: Promise<{ id: string }>;
@@ -67,6 +68,14 @@ export default async function ServiceDetailsPage({ params }: PageProps) {
                                 <span className="text-zinc-500">No keywords found.</span>
                             )}
                         </div>
+                    </div>
+                </div>
+
+                {/* SEO */}
+                <div className="space-y-3">
+                    <h3 className="text-lg font-semibold text-zinc-900">SEO Checklist</h3>
+                    <div className="rounded-xl border border-zinc-200 bg-white overflow-hidden">
+                        <SeoChecklistPanel seoMeta={(service as any).seo_meta} seoAudit={(service as any).seo_audit} />
                     </div>
                 </div>
             </div>

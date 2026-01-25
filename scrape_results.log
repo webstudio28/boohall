@@ -1,0 +1,17 @@
+
+--------------------------------------------------
+Testing https://cwsaprilov.wixsite.com...
+FAILURE: https://cwsaprilov.wixsite.com
+Error: Failed to fetch https://cwsaprilov.wixsite.com: Not Found
+
+--------------------------------------------------
+Testing https://lambdaspace.co/...
+SUCCESS: https://lambdaspace.co/
+Title: Lambda Space Coworking Plovdiv
+Content Length: 9355
+
+--------------------------------------------------
+Testing https://google.com...
+SUCCESS: https://google.com
+Title: Google
+Content Length: 3149

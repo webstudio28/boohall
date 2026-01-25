@@ -7,13 +7,21 @@ import { LanguageToggle } from '@/components/language-toggle'
 import { CompetitorList } from '@/components/competitor-list'
 import { RefreshKeywordsButton } from '../../../components/refresh-keywords-btn'
 import { DebugKeywords } from '../../../components/debug-keywords'
+import { KeywordRowActions } from '@/components/keyword-row-actions'
 import { regenerateNiche, regenerateCompetitors } from './actions'
 
-export default async function DashboardPage() {
+export default async function DashboardPage({
+    searchParams,
+}: {
+    searchParams?: Promise<{ showZero?: string }>
+}) {
     const supabase = await createClient()
 
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) redirect('/login')
+
+    const sp = searchParams ? await searchParams : {};
+    const showZero = sp?.showZero === '1';
 
     const { data: business } = await supabase
         .from('businesses')
@@ -24,13 +32,27 @@ export default async function DashboardPage() {
     if (!business) redirect('/onboarding')
 
     // Fetch related data in parallel
+    const keywordsQuery = supabase
+        .from('keywords')
+        .select('*')
+        .eq('business_id', business.id);
+
+    // Default: hide 0-volume keywords (keep null/unknown + >0)
+    if (!showZero) {
+        keywordsQuery.or('volume.is.null,volume.gt.0');
+    }
+
     const [competitorsRes, keywordsRes] = await Promise.all([
         supabase.from('competitors').select('*').eq('business_id', business.id).order('created_at', { ascending: false }),
-        supabase.from('keywords').select('*').eq('business_id', business.id).order('volume', { ascending: false }),
+        keywordsQuery,
     ])
 
     const competitors = competitorsRes.data || []
-    const keywords = keywordsRes.data || []
+    const keywords = (keywordsRes.data || []).sort((a: any, b: any) => {
+        const av = typeof a.volume === 'number' ? a.volume : -1;
+        const bv = typeof b.volume === 'number' ? b.volume : -1;
+        return bv - av;
+    })
     const analysis = business.analysis || {}
 
     const cookieStore = await cookies()
@@ -139,6 +161,13 @@ export default async function DashboardPage() {
                     <h3 className="text-lg font-semibold text-zinc-900">{dict.dashboard.sections.keywords}</h3>
                     <div className="flex items-center gap-2">
                         <RefreshKeywordsButton />
+                        <Link
+                            href={showZero ? '/dashboard' : '/dashboard?showZero=1'}
+                            className="text-xs text-zinc-500 hover:text-black border border-zinc-200 bg-zinc-50 hover:bg-zinc-100 rounded px-2 py-1 transition-colors"
+                            title={showZero ? 'Hide 0-volume keywords' : 'Show 0-volume keywords'}
+                        >
+                            {showZero ? 'Hide 0 volume' : 'Show 0 volume'}
+                        </Link>
                         <DebugKeywords />
                     </div>
                 </div>
@@ -175,6 +204,7 @@ export default async function DashboardPage() {
                                         </div>
                                     </th>
                                     <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-zinc-500 uppercase tracking-wider">{dict.dashboard.table.intent}</th>
+                                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-zinc-500 uppercase tracking-wider">Retrieved</th>
                                     <th scope="col" className="relative px-6 py-3">
                                         <span className="sr-only">{dict.dashboard.table.actions}</span>
                                     </th>
@@ -198,7 +228,9 @@ export default async function DashboardPage() {
                                                 )}
                                             </div>
                                         </td>
-                                        <td className="px-6 py-4 whitespace-nowrap text-sm text-zinc-500">{kw.volume}</td>
+                                        <td className="px-6 py-4 whitespace-nowrap text-sm text-zinc-500">
+                                            {typeof kw.volume === 'number' ? kw.volume : '—'}
+                                        </td>
                                         <td className="px-6 py-4 whitespace-nowrap text-sm">
                                             <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full 
                          ${kw.difficulty === 'Easy' ? 'bg-green-100 text-green-800' :
@@ -208,19 +240,27 @@ export default async function DashboardPage() {
                                             </span>
                                         </td>
                                         <td className="px-6 py-4 whitespace-nowrap text-sm text-zinc-500">{kw.intent}</td>
+                                        <td className="px-6 py-4 whitespace-nowrap text-sm text-zinc-500">
+                                            {kw.last_checked_at
+                                                ? new Date(kw.last_checked_at).toLocaleDateString()
+                                                : (kw.created_at ? new Date(kw.created_at).toLocaleDateString() : '—')}
+                                        </td>
                                         <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                                            <Link
-                                                href={`/editor/new?keyword=${encodeURIComponent(kw.id)}`}
-                                                className="text-black hover:text-zinc-600 bg-zinc-100 hover:bg-zinc-200 px-3 py-1.5 rounded-md transition-colors"
-                                            >
-                                                {dict.dashboard.table.create}
-                                            </Link>
+                                            <div className="flex items-center justify-end gap-2">
+                                                <Link
+                                                    href={`/editor/new?keyword=${encodeURIComponent(kw.id)}`}
+                                                    className="text-black hover:text-zinc-600 bg-zinc-100 hover:bg-zinc-200 px-3 py-1.5 rounded-md transition-colors"
+                                                >
+                                                    {dict.dashboard.table.create}
+                                                </Link>
+                                                <KeywordRowActions keywordId={kw.id} />
+                                            </div>
                                         </td>
                                     </tr>
                                 ))}
                                 {keywords.length === 0 && (
                                     <tr>
-                                        <td colSpan={5} className="px-6 py-8 text-center text-sm text-zinc-500">
+                                        <td colSpan={6} className="px-6 py-8 text-center text-sm text-zinc-500">
                                             {dict.dashboard.table.loading}
                                         </td>
                                     </tr>

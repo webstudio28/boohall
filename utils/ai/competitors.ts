@@ -1,5 +1,6 @@
 import { openai } from './client';
 import { createClient } from '@/utils/supabase/server';
+import { getCompetitorModel } from '@/utils/ai/models';
 
 export async function analyzeCompetitors(businessId: string) {
     const supabase = await createClient();
@@ -32,7 +33,7 @@ export async function analyzeCompetitors(businessId: string) {
     try {
         const completion = await openai.chat.completions.create({
             messages: [{ role: "system", content: "You are an SEO Competitor Analyst." }, { role: "user", content: prompt }],
-            model: "gpt-5.2",
+            model: getCompetitorModel(),
             response_format: { type: "json_object" },
         });
 

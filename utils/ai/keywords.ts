@@ -1,5 +1,6 @@
 import { openai } from './client';
 import { createClient } from '@/utils/supabase/server';
+import { getKeywordModel } from '@/utils/ai/models';
 
 // Helper for transliteration (Bulgarian Standard)
 function transliterateBG(text: string): string {
@@ -21,9 +22,47 @@ function transliterateBG(text: string): string {
 // Interface for keyword data
 interface KeywordData {
     keyword: string;
-    volume: number;
+    volume: number | null;
     difficulty: 'Easy' | 'Medium' | 'Hard';
     intent: 'Blog' | 'Landing' | 'Mixed';
+}
+
+async function generateAdjacentKeywords(args: {
+    businessDescription: string | null;
+    language: 'bg' | 'en';
+    targetCountry: string | null;
+    exclude: string[];
+    count: number;
+}): Promise<string[]> {
+    const { businessDescription, language, targetCountry, exclude, count } = args;
+
+    const prompt = `
+You generate SEO keywords that actually have search demand.
+
+Business: ${businessDescription || ''}
+Language: ${language}
+Target country: ${targetCountry || ''}
+
+Problem: the niche phrasing has near-zero search volume. Generate ${count} CLOSE alternatives that people *actually* search for.
+Rules:
+- Keep it close to the business, but broaden terminology (synonyms, more common phrasing, category terms).
+- Avoid luxury/premium-only wording if it reduces demand.
+- Avoid duplicates and avoid anything in the exclude list.
+- If language is bg: MUST be Bulgarian Cyrillic.
+- Return ONLY JSON: { "keywords": string[] }
+
+Exclude list (case-insensitive): ${JSON.stringify(exclude.slice(0, 50))}
+`.trim();
+
+    const completion = await openai.chat.completions.create({
+        messages: [{ role: "system", content: "You are an SEO keyword researcher." }, { role: "user", content: prompt }],
+        model: getKeywordModel(),
+        response_format: { type: "json_object" },
+    });
+
+    const result = JSON.parse(completion.choices[0].message.content || '{"keywords": []}');
+    const list = Array.isArray(result.keywords) ? result.keywords : [];
+    return list.map((k: any) => String(k || '').trim()).filter(Boolean);
 }
 
 export async function generateKeywords(businessId: string) {
@@ -43,7 +82,7 @@ export async function generateKeywords(businessId: string) {
     // Step 1: Generate Seed Keywords using OpenAI
     // We ask AI for just the keyword strings now, as we'll get metrics from Apify
     const promptSeed = `
-    Generate 10 realistic SEO keywords only for this business.
+    Generate 5 realistic SEO keywords only for this business.
     
     Business: ${business.product_description}
     Language: ${business.language}
@@ -64,7 +103,7 @@ export async function generateKeywords(businessId: string) {
     try {
         const completion = await openai.chat.completions.create({
             messages: [{ role: "system", content: "You are an SEO Keyword Researcher." }, { role: "user", content: promptSeed }],
-            model: "gpt-5.2",
+            model: getKeywordModel(),
             response_format: { type: "json_object" },
         });
         const result = JSON.parse(completion.choices[0].message.content || '{"keywords": []}');
@@ -80,6 +119,11 @@ export async function generateKeywords(businessId: string) {
     const { getKeywordsData } = await import('@/utils/dataforseo');
 
     let keywordData: KeywordData[] = [];
+    let debugExtra: string[] = [];
+
+    // Cost controls
+    const MAX_ADJACENT_BG = 3;
+    const MAX_ADJACENT_LATIN = 3;
 
     try {
         console.log('Using DataForSEO for real keyword metrics...');
@@ -91,15 +135,22 @@ export async function generateKeywords(businessId: string) {
         const countryCode = business.language === 'bg' ? 'BG' : 'US';
         const languageCode = business.language || 'en';
 
-        // Expand list with transliterations if Bulgarian
-        expandedKeywords = [...keywordsList];
+        // Expand list with transliterations if Bulgarian (5 BG + 5 Latin max)
+        const uniqueSeeds = Array.from(new Set(keywordsList.map(k => String(k || '').trim()).filter(Boolean)));
+        const bgSeeds = uniqueSeeds.slice(0, 5);
+
+        expandedKeywords = [...bgSeeds];
         if (business.language === 'bg') {
-            keywordsList.forEach(kw => {
+            const latinList: string[] = [];
+            bgSeeds.forEach(kw => {
                 const latin = transliterateBG(kw);
-                if (latin !== kw) {
-                    expandedKeywords.push(latin);
+                if (latin && latin !== kw) {
+                    latinList.push(latin);
                 }
             });
+
+            const uniqueLatin = Array.from(new Set(latinList));
+            expandedKeywords.push(...uniqueLatin.slice(0, 5));
         }
 
         const results = await getKeywordsData(expandedKeywords, countryCode, languageCode);
@@ -114,16 +165,16 @@ export async function generateKeywords(businessId: string) {
             if (item) {
                 return {
                     keyword: item.keyword, // Exact keyword from API
-                    volume: item.volume || 0,
+                    volume: typeof item.volume === 'number' ? item.volume : 0,
                     difficulty: item.difficulty || 'Medium',
                     intent: 'Mixed',
                     isValid: true // Verified by DataForSEO
                 } as KeywordData & { isValid: boolean };
             } else {
-                // Return placeholder with 0 volume
+                // Unknown (not returned by API) -> keep, but do not mark as checked
                 return {
                     keyword: seedKeyword,
-                    volume: 0,
+                    volume: null,
                     difficulty: 'Medium',
                     intent: 'Mixed',
                     isValid: false
@@ -131,14 +182,76 @@ export async function generateKeywords(businessId: string) {
             }
         });
 
-        // Filter: Keep verified keywords (even if volume is 0) 
-        // OR keep high volume keywords if verification failed coverage
-        const beforeFilter = keywordData.length;
+        console.log(`Keywords prepared: ${keywordData.length} (BG+Latin cap applied).`);
 
-        // Relaxed Filter: Keep if valid from API, OR if volume > 0 (just in case)
-        keywordData = keywordData.filter((k: any) => k.isValid || k.volume > 0);
+        // If we have almost no demand, broaden automatically (still close to niche).
+        const nonZero = keywordData.filter((k: any) => k.isValid && (k.volume ?? 0) > 0).length;
+        const checked = keywordData.filter((k: any) => k.isValid).length;
+        const lowDemand = checked > 0 && nonZero <= 1; // <= 1 keyword with demand is a signal
 
-        console.log(`Keywords Filtered: ${beforeFilter} -> ${keywordData.length}. removed ${beforeFilter - keywordData.length} invalid/zero-volume keywords.`);
+        if (lowDemand) {
+            console.log(`[Keywords] Low demand detected (nonZero=${nonZero}/${checked}). Generating adjacent keywords...`);
+
+            const { data: existing } = await supabase
+                .from('keywords')
+                .select('keyword')
+                .eq('business_id', businessId);
+
+            const exclude = Array.from(new Set([
+                ...expandedKeywords,
+                ...(existing || []).map((r: any) => r.keyword),
+            ].map((x: any) => String(x || '').trim()).filter(Boolean)));
+
+            const adjacent = await generateAdjacentKeywords({
+                businessDescription: business.product_description,
+                language: business.language,
+                targetCountry: business.target_country,
+                exclude,
+                count: MAX_ADJACENT_BG,
+            });
+
+            const adjUnique = Array.from(new Set(adjacent));
+            const adjBg = adjUnique.slice(0, MAX_ADJACENT_BG);
+            const adjExpanded: string[] = [...adjBg];
+
+            if (business.language === 'bg') {
+                const latinList: string[] = [];
+                adjBg.forEach((kw: string) => {
+                    const latin = transliterateBG(kw);
+                    if (latin && latin !== kw) latinList.push(latin);
+                });
+                const adjLatin = Array.from(new Set(latinList)).slice(0, MAX_ADJACENT_LATIN);
+                adjExpanded.push(...adjLatin);
+            }
+
+            debugExtra = adjExpanded;
+
+            const adjResults = await getKeywordsData(adjExpanded, countryCode, languageCode);
+            const adjMap = new Map(adjResults.map((item: any) => [String(item.keyword || '').toLowerCase(), item]));
+
+            const adjData = adjExpanded.map((seedKeyword) => {
+                const item = adjMap.get(String(seedKeyword).toLowerCase());
+                if (item) {
+                    return {
+                        keyword: item.keyword,
+                        volume: typeof item.volume === 'number' ? item.volume : 0,
+                        difficulty: item.difficulty || 'Medium',
+                        intent: 'Mixed',
+                        isValid: true
+                    } as KeywordData & { isValid: boolean };
+                }
+                return {
+                    keyword: seedKeyword,
+                    volume: null,
+                    difficulty: 'Medium',
+                    intent: 'Mixed',
+                    isValid: false
+                } as KeywordData & { isValid: boolean };
+            });
+
+            keywordData = [...keywordData, ...adjData];
+            console.log(`[Keywords] Added adjacent set: +${adjData.length}. Total now: ${keywordData.length}.`);
+        }
 
     } catch (error) {
         console.error('DataForSEO failed, falling back to AI.', error);
@@ -165,7 +278,7 @@ export async function generateKeywords(businessId: string) {
 
         const completion = await openai.chat.completions.create({
             messages: [{ role: "system", content: "You are an SEO Strategist." }, { role: "user", content: promptEstimate }],
-            model: "gpt-5.2",
+            model: getKeywordModel(),
             response_format: { type: "json_object" },
         });
 
@@ -179,22 +292,36 @@ export async function generateKeywords(businessId: string) {
 
     // Save to DB
     if (keywordData.length > 0) {
-        // existing insert logic
-        await supabase.from('keywords').insert(
-            keywordData.map((k: any) => ({
+        // Avoid duplicates (case-insensitive) and keep existing winners/zeros.
+        const { data: existing } = await supabase
+            .from('keywords')
+            .select('keyword')
+            .eq('business_id', businessId);
+
+        const existingSet = new Set((existing || []).map((r: any) => String(r.keyword || '').toLowerCase()));
+        const now = new Date().toISOString();
+
+        const rows = keywordData
+            .filter((k: any) => !existingSet.has(String(k.keyword || '').toLowerCase()))
+            .map((k: any) => ({
                 business_id: businessId,
                 keyword: k.keyword,
-                volume: k.volume,
+                volume: k.isValid ? (k.volume ?? 0) : null,
                 difficulty: k.difficulty,
                 intent: k.intent,
                 is_selected: false,
-                source: k.isValid ? 'dataforseo' : 'ai'
-            }))
-        );
+                source: k.isValid ? 'dataforseo' : 'ai',
+                last_checked_at: k.isValid ? now : null,
+                do_not_retry: k.isValid && (k.volume ?? 0) === 0,
+            }));
+
+        if (rows.length > 0) {
+            await supabase.from('keywords').insert(rows);
+        }
     }
 
     return {
         keywords: keywordData,
-        debugExpandedList: expandedKeywords || keywordsList
+        debugExpandedList: [...(expandedKeywords || keywordsList), ...debugExtra]
     };
 }

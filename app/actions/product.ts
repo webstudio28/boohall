@@ -3,6 +3,8 @@
 import { createClient } from '@/utils/supabase/server';
 import { openai } from '@/utils/ai/client';
 import { getKeywordsData } from '@/utils/dataforseo';
+import { buildSeoAuditPrompt } from '@/utils/ai/seo-audit';
+import { getProductModel } from '@/utils/ai/models';
 import { revalidatePath } from 'next/cache';
 import { cookies } from 'next/headers';
 
@@ -127,6 +129,33 @@ export async function createProductDescription(
 
     const generatedDescription = descriptionResponse.choices[0].message.content;
 
+    // SEO Audit (structured JSON for UI)
+    const contentMd = `# ${name}\n\n${generatedDescription || ''}`;
+    const primaryKeyword = selectedKeywords?.[0]?.keyword || selectedKeywords?.[0] || name;
+
+    let seoAudit: any = null;
+    let seoMeta: any = null;
+    try {
+        const auditPrompt = buildSeoAuditPrompt({
+            pageType: 'product',
+            primaryKeyword: String(primaryKeyword || ''),
+            languageName,
+            businessContext: name,
+            contentMd,
+        });
+
+        const auditResponse = await openai.chat.completions.create({
+            model: getProductModel(),
+            messages: [{ role: 'user', content: auditPrompt }],
+            response_format: { type: 'json_object' },
+        });
+
+        seoAudit = JSON.parse(auditResponse.choices[0].message.content || '{}');
+        seoMeta = seoAudit?.meta || null;
+    } catch (e) {
+        console.error('SEO audit generation failed (product):', e);
+    }
+
     // Save
     const { error: dbError } = await supabase
         .from('product_descriptions')
@@ -136,7 +165,9 @@ export async function createProductDescription(
             image_url: imageUrl,
             keywords: selectedKeywords, // Store only selected ones? or all? Let's store selected for now as that's what relates to the text.
             seo_data: allKeywords, // Store full data for reference if needed
-            description: generatedDescription
+            description: generatedDescription,
+            seo_meta: seoMeta,
+            seo_audit: seoAudit,
         });
 
     if (dbError) throw new Error('Failed to save product');

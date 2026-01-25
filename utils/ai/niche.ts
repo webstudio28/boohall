@@ -1,5 +1,6 @@
 import { openai } from './client';
 import { createClient } from '@/utils/supabase/server';
+import { getNicheModel } from '@/utils/ai/models';
 
 export async function analyzeNiche(businessId: string) {
     const supabase = await createClient();
@@ -32,7 +33,7 @@ export async function analyzeNiche(businessId: string) {
     try {
         const completion = await openai.chat.completions.create({
             messages: [{ role: "system", content: "You are an expert SEO Strategist." }, { role: "user", content: prompt }],
-            model: "gpt-5.2", // Best model regardless of price
+            model: getNicheModel(),
             response_format: { type: "json_object" },
         });
 

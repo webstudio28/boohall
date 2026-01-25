@@ -1,4 +1,5 @@
 @import "tailwindcss";
+@plugin "@tailwindcss/typography";
 
 @theme {
   --font-sans: var(--font-geist-sans);
@@ -8,7 +9,8 @@
 :root {
   --background: #ffffff;
   --foreground: #171717;
-  --accent: #2563eb; /* Blue-600 */
+  --accent: #2563eb;
+  /* Blue-600 */
 }
 
 body {

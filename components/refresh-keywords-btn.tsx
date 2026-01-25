@@ -17,8 +17,11 @@ import { useEffect } from 'react';
 // and then save it to localStorage.
 
 import { regenerateKeywords } from '@/app/(dashboard)/dashboard/actions';
+import { deleteAllKeywords } from '@/app/(dashboard)/dashboard/actions';
+import { useRouter } from 'next/navigation';
 
 export function RefreshKeywordsButton() {
+    const router = useRouter();
     const handleRefresh = async () => {
         try {
             // We need to modify regenerateKeywords to return the payload
@@ -30,17 +33,35 @@ export function RefreshKeywordsButton() {
                 // Dispatch event to update the debug UI instantly
                 window.dispatchEvent(new Event('debug-update'));
             }
+
+            router.refresh();
         } catch (e) {
             console.error(e);
         }
     };
 
+    const handleDeleteAll = async () => {
+        const ok = window.confirm('Delete ALL keywords? This cannot be undone.');
+        if (!ok) return;
+        await deleteAllKeywords();
+        router.refresh();
+    };
+
     return (
-        <button
-            onClick={handleRefresh}
-            className="text-xs text-zinc-500 hover:text-black border border-zinc-200 bg-zinc-50 hover:bg-zinc-100 rounded px-2 py-1 transition-colors"
-        >
-            ↻ Refresh Keywords (Debug)
-        </button>
+        <div className="flex items-center gap-2">
+            <button
+                onClick={handleRefresh}
+                className="text-xs text-zinc-500 hover:text-black border border-zinc-200 bg-zinc-50 hover:bg-zinc-100 rounded px-2 py-1 transition-colors"
+            >
+                ↻ Refresh Keywords
+            </button>
+            <button
+                onClick={handleDeleteAll}
+                className="text-xs text-zinc-500 hover:text-black border border-zinc-200 bg-zinc-50 hover:bg-zinc-100 rounded px-2 py-1 transition-colors"
+                title="Delete all"
+            >
+                🗑 Delete all
+            </button>
+        </div>
     );
 }

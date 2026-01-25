@@ -13,6 +13,9 @@ export async function createArticle(formData: FormData) {
     const keywordId = formData.get('keywordId') as string
     const goal = formData.get('goal') as string
     const tone = formData.get('tone') as string
+    const authorName = formData.get('authorName') as string
+    const authorBio = formData.get('authorBio') as string
+    const saveAuthor = formData.get('saveAuthor') === 'true'
 
     // Get business for language
     const { data: business } = await supabase
@@ -41,6 +44,24 @@ export async function createArticle(formData: FormData) {
     // Find parent if it's a version > 1? Or just link to the first one?
     // For now, simple version increment is enough.
 
+    // Handle Author Saving
+    if (saveAuthor && authorName) {
+        // Check if exists to avoid duplicates (based on name for now, or just insert)
+        // Simple insert is fine, user can manage duplicates or we can refine later.
+        // Actually best to check if name exists for this user? 
+        // Let's just insert for now as requested "if filled and used once... save for user's account"
+        await supabase.from('saved_authors').insert({
+            user_id: user.id,
+            name: authorName,
+            bio: authorBio
+        })
+    }
+
+    const authorInfo = authorName ? {
+        name: authorName,
+        bio: authorBio
+    } : null
+
     // Create article record
     const { data: article, error } = await supabase
         .from('articles')
@@ -51,6 +72,7 @@ export async function createArticle(formData: FormData) {
             goal: goal,
             tone: tone,
             version: nextVersion,
+            author_info: authorInfo
             // language: business.language, // Not in my new migration, but useful if I add it. For now, prompt uses business language.
             // status: 'generating' // Not in migration, can add or skip. I'll skip status for now or assume it defaults if column exists. 
             // My migration didn't have status. I'll skip it and just rely on content being null/filled.

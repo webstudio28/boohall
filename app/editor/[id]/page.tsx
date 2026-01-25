@@ -25,7 +25,7 @@ export default async function EditorPage({
 
     const { data: article } = await supabase
         .from('articles')
-        .select('*')
+        .select('*, keyword:keywords(*), business:businesses(*)')
         .eq('id', id)
         .single()
 

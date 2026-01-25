@@ -1,6 +1,7 @@
 import { createClient } from '@/utils/supabase/server'
 import { redirect } from 'next/navigation'
 import { createArticle } from '../actions'
+import { AuthorFields } from '@/app/(dashboard)/articles/author-fields'
 
 export default async function NewArticlePage({
     searchParams,
@@ -22,6 +23,13 @@ export default async function NewArticlePage({
         .single()
 
     if (!keyword) redirect('/dashboard')
+
+    // Fetch saved authors
+    const { data: savedAuthors } = await supabase
+        .from('saved_authors')
+        .select('*')
+        .eq('user_id', user.id)
+        .order('created_at', { ascending: false })
 
     return (
         <div className="flex min-h-screen items-center justify-center p-4 bg-zinc-50">
@@ -64,6 +72,8 @@ export default async function NewArticlePage({
                                 ))}
                             </div>
                         </div>
+
+                        <AuthorFields savedAuthors={savedAuthors || []} />
                     </div>
 
                     <button

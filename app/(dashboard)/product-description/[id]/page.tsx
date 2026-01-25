@@ -3,6 +3,7 @@ import { ArrowLeft } from 'lucide-react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { notFound } from 'next/navigation';
+import { SeoChecklistPanel } from '@/components/seo-checklist/seo-checklist-panel';
 
 interface PageProps {
     params: Promise<{ id: string }>;
@@ -86,6 +87,13 @@ export default async function ProductDetailsPage({ params }: PageProps) {
                             ) : (
                                 <span className="text-zinc-500">No keywords found.</span>
                             )}
+                        </div>
+                    </div>
+
+                    <div>
+                        <h3 className="text-lg font-semibold text-zinc-900 mb-3">SEO Checklist</h3>
+                        <div className="rounded-xl border border-zinc-200 bg-white overflow-hidden">
+                            <SeoChecklistPanel seoMeta={(product as any).seo_meta} seoAudit={(product as any).seo_audit} />
                         </div>
                     </div>
                 </div>

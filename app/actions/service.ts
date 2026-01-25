@@ -3,6 +3,8 @@
 import { createClient } from '@/utils/supabase/server';
 import { openai } from '@/utils/ai/client';
 import { getKeywordsData } from '@/utils/dataforseo';
+import { buildSeoAuditPrompt } from '@/utils/ai/seo-audit';
+import { getServiceModel } from '@/utils/ai/models';
 import { revalidatePath } from 'next/cache';
 import { cookies } from 'next/headers';
 
@@ -93,6 +95,33 @@ export async function createServiceDescription(
 
     const generatedDescription = descriptionResponse.choices[0].message.content;
 
+    // SEO Audit (structured JSON for UI)
+    const contentMd = `# ${name}\n\n${generatedDescription || ''}`;
+    const primaryKeyword = selectedKeywords?.[0]?.keyword || selectedKeywords?.[0] || name;
+
+    let seoAudit: any = null;
+    let seoMeta: any = null;
+    try {
+        const auditPrompt = buildSeoAuditPrompt({
+            pageType: 'service',
+            primaryKeyword: String(primaryKeyword || ''),
+            languageName,
+            businessContext: name,
+            contentMd,
+        });
+
+        const auditResponse = await openai.chat.completions.create({
+            model: getServiceModel(),
+            messages: [{ role: 'user', content: auditPrompt }],
+            response_format: { type: 'json_object' },
+        });
+
+        seoAudit = JSON.parse(auditResponse.choices[0].message.content || '{}');
+        seoMeta = seoAudit?.meta || null;
+    } catch (e) {
+        console.error('SEO audit generation failed (service):', e);
+    }
+
     // Save
     const { error: dbError } = await supabase
         .from('service_descriptions')
@@ -101,7 +130,9 @@ export async function createServiceDescription(
             name,
             keywords: selectedKeywords,
             seo_data: allKeywords,
-            description: generatedDescription
+            description: generatedDescription,
+            seo_meta: seoMeta,
+            seo_audit: seoAudit,
         });
 
     if (dbError) throw new Error('Failed to save service');

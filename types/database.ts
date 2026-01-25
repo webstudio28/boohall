@@ -76,6 +76,9 @@ export interface Database {
                     difficulty: 'Easy' | 'Medium' | 'Hard' | null
                     intent: 'Blog' | 'Landing' | 'Mixed' | null
                     is_selected: boolean
+                    source: string | null
+                    last_checked_at: string | null
+                    do_not_retry: boolean | null
                     created_at: string
                 }
                 Insert: {
@@ -86,6 +89,9 @@ export interface Database {
                     difficulty?: 'Easy' | 'Medium' | 'Hard' | null
                     intent?: 'Blog' | 'Landing' | 'Mixed' | null
                     is_selected?: boolean
+                    source?: string | null
+                    last_checked_at?: string | null
+                    do_not_retry?: boolean | null
                     created_at?: string
                 }
                 Update: {
@@ -96,6 +102,9 @@ export interface Database {
                     difficulty?: 'Easy' | 'Medium' | 'Hard' | null
                     intent?: 'Blog' | 'Landing' | 'Mixed' | null
                     is_selected?: boolean
+                    source?: string | null
+                    last_checked_at?: string | null
+                    do_not_retry?: boolean | null
                     created_at?: string
                 }
             }
@@ -108,6 +117,7 @@ export interface Database {
                     content_md: string | null
                     status: 'draft' | 'generating' | 'completed'
                     language: 'bg' | 'en'
+                    author_info: Json | null
                     created_at: string
                     updated_at: string
                 }
@@ -119,6 +129,7 @@ export interface Database {
                     content_md?: string | null
                     status?: 'draft' | 'generating' | 'completed'
                     language?: 'bg' | 'en'
+                    author_info?: Json | null
                     created_at?: string
                     updated_at?: string
                 }
@@ -130,8 +141,32 @@ export interface Database {
                     content_md?: string | null
                     status?: 'draft' | 'generating' | 'completed'
                     language?: 'bg' | 'en'
+                    author_info?: Json | null
                     created_at?: string
                     updated_at?: string
+                }
+            }
+            saved_authors: {
+                Row: {
+                    id: string
+                    user_id: string
+                    name: string
+                    bio: string | null
+                    created_at: string
+                }
+                Insert: {
+                    id?: string
+                    user_id: string
+                    name: string
+                    bio?: string | null
+                    created_at?: string
+                }
+                Update: {
+                    id?: string
+                    user_id?: string
+                    name?: string
+                    bio?: string | null
+                    created_at?: string
                 }
             }
         }

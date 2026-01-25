@@ -115,6 +115,19 @@ export function NewAnalysisModal({ isOpen, onClose }: NewAnalysisModalProps) {
                                 />
                             </div>
                         </div>
+
+                        <div>
+                            <label htmlFor="specificFocus" className="block text-sm font-medium text-zinc-700 mb-2">
+                                Разгледай специфичен проблем (незадължително)
+                            </label>
+                            <textarea
+                                name="specificFocus"
+                                id="specificFocus"
+                                rows={3}
+                                placeholder="Например: Ценова политика, Мобилна версия, Фуния на продажби..."
+                                className="block w-full rounded-lg border-zinc-200 bg-zinc-50 px-4 py-3 text-sm focus:border-zinc-900 focus:ring-zinc-900 resize-none"
+                            />
+                        </div>
                     </div>
 
                     {error && (
